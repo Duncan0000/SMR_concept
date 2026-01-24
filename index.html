@@ -1,711 +1,774 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Clock, ChevronLeft, ChevronRight, CheckCircle, XCircle, BookOpen, RefreshCw, Activity } from 'lucide-react';
-
-// ----------------------------------------------------------------------
-// 題庫資料 (共 30 題，基於上傳的 SMR-Concept.pdf)
-// ----------------------------------------------------------------------
-const rawQuestions = [
-  {
-    id: 1,
-    question: "關於「肌筋膜 (Myofascia)」的定義與特性，下列敘述何者正確？",
-    options: [
-      "它只是一層單純包覆肌肉的薄膜，功能僅止於隔絕組織",
-      "它是一張立體、連續且可傳遞力量的網絡，從頭到腳沒有中斷",
-      "筋膜系統各自獨立，互不相連，因此局部張力不會影響全身",
-      "肌筋膜不具備感覺神經末梢，無法回報本體感覺"
-    ],
-    correctAnswer: "它是一張立體、連續且可傳遞力量的網絡，從頭到腳沒有中斷",
-    explanation: "肌筋膜不是單一薄膜，而是一套連續性結締組織系統，具備結構支撐、力量傳導與感覺通訊(富含神經末梢)的功能。"
-  },
-  {
-    id: 2,
-    question: "在SMR概念中，關於「淺背線 (Superficial Back Line)」的功能與常見代償，下列何者正確？",
-    options: [
-      "主要負責身體的屈曲動作，如彎腰",
-      "負責維持直立姿勢，防止身體蜷曲，常見代償為足底筋膜炎或頭痛",
-      "主要連接身體前側，與呼吸模式無關",
-      "若失衡容易導致骨盆前傾與膝蓋過度彎曲"
-    ],
-    correctAnswer: "負責維持直立姿勢，防止身體蜷曲，常見代償為足底筋膜炎或頭痛",
-    explanation: "淺背線是身體的保護甲殼，負責支撐脊椎伸展。常見代償包含足底筋膜炎、骨盆後傾、背痛及額頭張力性頭痛。"
-  },
-  {
-    id: 3,
-    question: "「淺前線 (Superficial Front Line)」的主要功能與長期緊繃可能導致的結果為何？",
-    options: [
-      "負責防止身體後仰，長期緊繃易導致圓肩駝背與呼吸短淺",
-      "負責身體的旋轉穩定度，緊繃會導致脊椎側彎",
-      "主要功能是推動物體，與頭頸位置無關",
-      "負責足弓的支撐，緊繃會導致高足弓"
-    ],
-    correctAnswer: "負責防止身體後仰，長期緊繃易導致圓肩駝背與呼吸短淺",
-    explanation: "淺前線平衡淺背線張力，保護臟器。代償常見頭部前引、圓肩駝背，並限制肋骨活動導致呼吸受限。"
-  },
-  {
-    id: 4,
-    question: "關於「螺旋線 (Spiral Line)」的功能描述，下列何者最為精確？",
-    options: [
-      "負責身體前後的穩定，不參與旋轉動作",
-      "以雙螺旋形態纏繞身體，負責維持旋轉穩定及協調步伐擺動",
-      "只存在於上半身，負責手臂的揮動",
-      "主要功能是保護脊椎不受垂直壓力的傷害"
-    ],
-    correctAnswer: "以雙螺旋形態纏繞身體，負責維持旋轉穩定及協調步伐擺動",
-    explanation: "螺旋線連接頭骨、對側肩膀與髖部，協調行走步伐。失衡常見代償為身體慣性扭轉、高低肩或骨盆旋轉不正。"
-  },
-  {
-    id: 5,
-    question: "「側線 (Lateral Line)」若發生張力失衡，最常出現下列哪種代償現象？",
-    options: [
-      "圓肩與頭部前引",
-      "骨盆側移、功能性長短腳或髂脛束摩擦症候群(ITBS)",
-      "膝蓋過度伸直鎖死",
-      "腰椎過度前凸"
-    ],
-    correctAnswer: "骨盆側移、功能性長短腳或髂脛束摩擦症候群(ITBS)",
-    explanation: "側線像括號般夾住身體，負責左右平衡。失衡會導致骨盆側移、鞋底磨損不均及ITBS。"
-  },
-  {
-    id: 6,
-    question: "關於「深前線 (Deep Front Line)」的描述，下列何者錯誤？",
-    options: [
-      "位於人體最深層的核心支柱，與橫膈膜及呼吸密切相關",
-      "從足底延伸至舌頭，包含腰大肌與骨盆底肌",
-      "若失衡可能導致顳顎關節障礙(TMJ)或慢性下背痛",
-      "主要負責爆發力動作，如投擲與衝刺"
-    ],
-    correctAnswer: "主要負責爆發力動作，如投擲與衝刺",
-    explanation: "負責爆發力與跨越軀幹傳遞力量的是「功能線 (Functional Line)」。深前線主要負責核心支撐與穩定。"
-  },
-  {
-    id: 7,
-    question: "針對「胸小肌 (Pectoralis minor)」的解剖與臨床意義，下列敘述何者正確？",
-    options: [
-      "連接於肩胛骨的肩峰，負責上提手臂",
-      "若過度緊繃，可能壓迫臂神經叢導致胸廓出口症候群",
-      "是主要的呼吸肌，負責用力吐氣",
-      "拮抗肌為前鋸肌，兩者功能完全相反"
-    ],
-    correctAnswer: "若過度緊繃，可能壓迫臂神經叢導致胸廓出口症候群",
-    explanation: "胸小肌連接喙突，緊繃時易像鋼索勒住下方的神經血管(胸廓出口)，導致手麻；也會造成肩胛骨前傾。"
-  },
-  {
-    id: 8,
-    question: "「胸鎖乳突肌 (SCM)」的激痛點轉移痛(Referred Pain)特徵，常被誤診為下列何種狀況？",
-    options: [
-      "牙痛或牙齦發炎",
-      "眼壓高、鼻竇炎或偏頭痛",
-      "頸椎神經根壓迫",
-      "落枕"
-    ],
-    correctAnswer: "眼壓高、鼻竇炎或偏頭痛",
-    explanation: "SCM的疼痛常投射到眼眶周圍、額頭或耳後，易被誤認為眼壓高、鼻竇炎或血管性頭痛，稱為「假性偏頭痛」。"
-  },
-  {
-    id: 9,
-    question: "關於「提肩胛肌 (Levator scapulae)」的敘述，下列何者正確？",
-    options: [
-      "位於背部最淺層，主要負責保護脊椎",
-      "常與上斜方肌一起造成聳肩代償，過緊可能限制肩胛上轉",
-      "是肩關節外展的主要啟動肌",
-      "連接於鎖骨與肱骨之間"
-    ],
-    correctAnswer: "常與上斜方肌一起造成聳肩代償，過緊可能限制肩胛上轉",
-    explanation: "提肩胛肌負責上提與下轉肩胛骨。緊繃時會主導聳肩模式，並拮抗前鋸肌，限制肩胛骨上轉，導致夾擠風險。"
-  },
-  {
-    id: 10,
-    question: "現代人常見的「臀肌失憶症 (Gluteal Amnesia)」主要是因為哪種機制造成的？",
-    options: [
-      "臀大肌過度訓練導致疲勞",
-      "協同肌主導 (Synergistic Dominance)，大腦改徵召腿後肌或下背肌群代償",
-      "坐骨神經受損導致肌肉萎縮",
-      "骨盆過度後傾導致肌肉長度縮短"
-    ],
-    correctAnswer: "協同肌主導 (Synergistic Dominance)，大腦改徵召腿後肌或下背肌群代償",
-    explanation: "久坐導致臀大肌拉長無力，伸髖時大腦改用腿後肌或豎脊肌代班，導致腰痠背痛或大腿後側緊繃。"
-  },
-  {
-    id: 11,
-    question: "「梨狀肌症候群 (Piriformis Syndrome)」的主要成因與症狀為何？",
-    options: [
-      "梨狀肌斷裂，導致無法行走",
-      "梨狀肌緊繃壓迫坐骨神經，造成臀部深處疼痛及腿後麻感",
-      "梨狀肌無力，導致大腿無法內收",
-      "屬於腰椎椎間盤突出的併發症"
-    ],
-    correctAnswer: "梨狀肌緊繃壓迫坐骨神經，造成臀部深處疼痛及腿後麻感",
-    explanation: "梨狀肌橫跨坐骨大孔，坐骨神經通常穿過其下方。肌肉緊繃壓迫神經時，症狀類似坐骨神經痛。"
-  },
-  {
-    id: 12,
-    question: "在股四頭肌群中，唯一跨越兩個關節(髖與膝)的是哪一條肌肉？",
-    options: [
-      "股外側肌 (Vastus Lateralis)",
-      "股直肌 (Rectus Femoris)",
-      "股內側肌 (Vastus Medialis)",
-      "股中間肌 (Vastus Intermedius)"
-    ],
-    correctAnswer: "股直肌 (Rectus Femoris)",
-    explanation: "股直肌起點在髂前下棘(AIIS)，跨過髖關節，因此除了伸膝外，還具備屈髖功能。"
-  },
-  {
-    id: 13,
-    question: "關於「髂脛束 (Iliotibial Band, ITB)」的特性，下列何者正確？",
-    options: [
-      "它是一條主動收縮力很強的肌肉",
-      "它是大腿外側的厚實筋膜束，張力主要來自TFL與臀大肌",
-      "它主要負責大腿的內收動作",
-      "它與膝關節的穩定度無關"
-    ],
-    correctAnswer: "它是大腿外側的厚實筋膜束，張力主要來自TFL與臀大肌",
-    explanation: "ITB不是肌肉，無法主動收縮。它像纜繩一樣傳遞闊筋膜張肌(TFL)與臀大肌的力量，協助穩定膝關節。"
-  },
-  {
-    id: 14,
-    question: "髂脛束摩擦症候群 (ITBS) 的疼痛位置與發生機制通常為何？",
-    options: [
-      "鼠蹊部內側，因內收肌拉傷",
-      "膝蓋外側(股骨外上髁)，因膝屈伸時筋膜反覆摩擦骨頭",
-      "臀部深層，因坐骨神經受壓",
-      "小腿肚，因肌肉撕裂"
-    ],
-    correctAnswer: "膝蓋外側(股骨外上髁)，因膝屈伸時筋膜反覆摩擦骨頭",
-    explanation: "當膝彎曲約30度時，ITB會滑過股骨外上髁。若過緊或骨盆控制不佳，反覆摩擦會導致發炎疼痛。"
-  },
-  {
-    id: 15,
-    question: "伸展小腿後側肌群時，欲針對「腓腸肌 (Gastrocnemius)」進行伸展，膝蓋應保持何種姿勢？",
-    options: [
-      "膝蓋必須伸直",
-      "膝蓋必須彎曲",
-      "膝蓋姿勢不影響效果",
-      "需同時做踝關節蹠屈"
-    ],
-    correctAnswer: "膝蓋必須伸直",
-    explanation: "腓腸肌是跨關節肌肉(跨過膝)，伸膝才能拉長它；若屈膝則會放鬆腓腸肌，轉而伸展到比目魚肌。"
-  },
-  {
-    id: 16,
-    question: "「圓肩 (Round Shoulder)」的肌肉動態評估中，常見的緊繃肌群不包含下列何者？",
-    options: [
-      "胸大肌與胸小肌",
-      "闊背肌",
-      "上斜方肌",
-      "菱形肌與中下斜方肌"
-    ],
-    correctAnswer: "菱形肌與中下斜方肌",
-    explanation: "圓肩者通常伴隨肩胛骨前傾與外展，菱形肌與中下斜方肌通常是被拉長且無力的，而非緊繃。"
-  },
-  {
-    id: 17,
-    question: "在「肩屈曲測試 (Shoulder Flexion Test)」中，若動作初期即出現明顯聳肩，最可能的原因是？",
-    options: [
-      "上斜方肌過度代償，掩蓋肩胛骨上轉不足",
-      "闊背肌過度緊繃限制動作",
-      "前鋸肌力量太強",
-      "肱骨頭下滑過多"
-    ],
-    correctAnswer: "上斜方肌過度代償，掩蓋肩胛骨上轉不足",
-    explanation: "正常肩屈需配合肩胛上轉。若上轉不足(如前鋸肌/下斜方無力)，上斜方肌會提早用力聳肩代償。"
-  },
-  {
-    id: 18,
-    question: "「翼狀肩胛 (Scapular Winging)」最主要的成因通常與哪條肌肉的神經控制或肌力不足有關？",
-    options: [
-      "胸大肌",
-      "前鋸肌 (Serratus anterior)",
-      "三角肌",
-      "肱三頭肌"
-    ],
-    correctAnswer: "前鋸肌 (Serratus anterior)",
-    explanation: "前鋸肌負責將肩胛骨貼緊胸廓。若無力或神經失調，推撐時肩胛骨內側緣會翹起，形成翼狀肩胛。"
-  },
-  {
-    id: 19,
-    question: "關於「骨盆前傾 (Anterior Pelvic Tilt)」的代償模式，下列敘述何者正確？",
-    options: [
-      "腹肌過度緊繃縮短",
-      "深蹲時習慣以腰椎代替髖關節伸展，增加下背壓力",
-      "大腿後肌過度緊繃",
-      "臀大肌過度活躍"
-    ],
-    correctAnswer: "深蹲時習慣以腰椎代替髖關節伸展，增加下背壓力",
-    explanation: "骨盆前傾者通常髂腰肌與豎脊肌緊繃，臀肌與腹肌無力。動作時常以腰椎前凸代償髖伸不足。"
-  },
-  {
-    id: 20,
-    question: "「膝外翻 (Dynamic Knee Valgus)」的主要問題通常源自於哪個關節的控制不足？",
-    options: [
-      "膝關節本身的韌帶鬆弛",
-      "髖關節的外展與外旋控制不足 (臀中肌/大肌無力)",
-      "踝關節過度內翻",
-      "股四頭肌力量太強"
-    ],
-    correctAnswer: "髖關節的外展與外旋控制不足 (臀中肌/大肌無力)",
-    explanation: "膝外翻(內扣)雖發生在膝蓋，但根源常是髖部外展外旋肌群無力，導致股骨內收內旋，使膝蓋向內塌陷。"
-  },
-  {
-    id: 21,
-    question: "「肱骨前移 (Anterior Humeral Glide)」常導致前肩痛，其成因多與何種組織緊繃有關？",
-    options: [
-      "前側關節囊",
-      "後側關節囊與旋轉肌袖後側",
-      "前鋸肌",
-      "下斜方肌"
-    ],
-    correctAnswer: "後側關節囊與旋轉肌袖後側",
-    explanation: "後側關節囊過緊會將肱骨頭向前推(類似擠牙膏)，導致肱骨頭在動作時向前滑動，夾擠前側組織。"
-  },
-  {
-    id: 22,
-    question: "進行「髖伸直測試 (Hip Extension Test)」時，若受測者出現明顯的腰椎前凸代償，主要暗示什麼問題？",
-    options: [
-      "腹肌太有力",
-      "髖屈肌(如髂腰肌/股直肌)緊繃限制後伸角度",
-      "臀大肌過度活躍",
-      "腿後肌柔軟度極佳"
-    ],
-    correctAnswer: "髖屈肌(如髂腰肌/股直肌)緊繃限制後伸角度",
-    explanation: "前方髖屈肌太緊會拉住骨盆。當腿向後伸時，卡住的角度迫使個案用轉動骨盆(前傾)和拱腰來假裝後伸。"
-  },
-  {
-    id: 23,
-    question: "扁平足 (Foot over-pronation) 對下肢力線的連鎖影響，通常不包含下列哪項？",
-    options: [
-      "脛骨內旋",
-      "膝外翻 (Knee Valgus)",
-      "髖關節外旋",
-      "功能性長短腳"
-    ],
-    correctAnswer: "髖關節外旋",
-    explanation: "足弓塌陷會帶動脛骨內旋、股骨內旋及膝外翻。髖關節通常呈現內旋而非外旋狀態。"
-  },
-  {
-    id: 24,
-    question: "關於「功能線 (Functional Line)」的作用，主要體現在哪種活動中？",
-    options: [
-      "靜止站立",
-      "睡覺放鬆",
-      "劇烈運動、投擲或奔跑時的跨軀幹力量傳遞",
-      "精細的手指操作"
-    ],
-    correctAnswer: "劇烈運動、投擲或奔跑時的跨軀幹力量傳遞",
-    explanation: "功能線連接對側肩膀與大腿(如擴背肌-臀大肌)，在靜止時不活躍，主要負責爆發力動作的對角線傳導。"
-  },
-  {
-    id: 25,
-    question: "SMR-C 核心概念中，強調「關鍵點干預技術」的原則為何？",
-    options: [
-      "全身大面積、淺層的快速推拿",
-      "只針對痛點進行高強度按壓",
-      "針對影響張力與動作障礙的關鍵筋膜結點，進行準而深的介入",
-      "完全不觸碰疼痛區域，只做伸展"
-    ],
-    correctAnswer: "針對影響張力與動作障礙的關鍵筋膜結點，進行準而深的介入",
-    explanation: "關鍵點干預強調評估後鎖定問題源頭(如肌間隔、鈣化點)，進行精準且深層的處理，以恢復筋膜滑動與傳導。"
-  },
-  {
-    id: 26,
-    question: "若在髖屈曲測試中發現「腹股溝深層夾擠痛」，且大腿不自覺外展，可能原因為？",
-    options: [
-      "臀大肌太緊",
-      "髖關節夾擠或股骨頭後滑不足",
-      "內收肌太強",
-      "腹肌無力"
-    ],
-    correctAnswer: "髖關節夾擠或股骨頭後滑不足",
-    explanation: "屈髖需要股骨頭向後滑動。若後囊緊繃或結構問題導致後滑受限，股骨頭會撞擊前側髖臼，造成夾擠痛與代償動作。"
-  },
-  {
-    id: 27,
-    question: "肱二頭肌 (Biceps Brachii) 除了屈肘，還具備什麼重要功能，使其容易影響肩部？",
-    options: [
-      "肩關節內收",
-      "前臂旋後 (Supination) 與協助肩屈曲",
-      "肩關節伸展",
-      "手腕伸展"
-    ],
-    correctAnswer: "前臂旋後 (Supination) 與協助肩屈曲",
-    explanation: "肱二頭肌長頭跨過肩關節。它是強力的旋後肌，且協助肩屈。緊繃時可能拉扯盂唇或造成前肩疼痛。"
-  },
-  {
-    id: 28,
-    question: "在SMR概念中，處理「髕骨股骨疼痛症候群 (PFPS)」時，常需放鬆何處以平衡張力？",
-    options: [
-      "股內側肌",
-      "股外側肌與髂脛束",
-      "小腿後側",
-      "足底筋膜"
-    ],
-    correctAnswer: "股外側肌與髂脛束",
-    explanation: "PFPS常因外側組織(ITB/股外側肌)太緊，將髕骨向外拉離軌道。放鬆外側並訓練內側是常見策略。"
-  },
-  {
-    id: 29,
-    question: "關於「手臂線 (Arm Line)」的敘述，下列何者正確？",
-    options: [
-      "只負責手臂動作，與軀幹無關",
-      "分為深淺前後四條，從胸廓脊椎連結至指尖，影響推拉與穩定",
-      "主要由肱骨組成，沒有筋膜連結",
-      "若失衡只會造成手腕痛，不會影響肩膀"
-    ],
-    correctAnswer: "分為深淺前後四條，從胸廓脊椎連結至指尖，影響推拉與穩定",
-    explanation: "手臂線包含胸肌、背肌、手臂肌群等，透過筋膜鏈影響肩胛位置。遠端手麻常源自近端胸廓張力異常。"
-  },
-  {
-    id: 30,
-    question: "闊筋膜張肌 (TFL) 緊繃時，容易在步態或測試中造成什麼樣的代償動作？",
-    options: [
-      "髖關節過度內收",
-      "髖關節外轉",
-      "髖關節伸直角度增加",
-      "大腿過度外展與內旋"
-    ],
-    correctAnswer: "大腿過度外展與內旋",
-    explanation: "TFL的功能是屈髖、外展與內旋。緊繃時會讓腿在動作中(如走路或抬腿)偏向外展內旋的位置。"
-  }
-];
-
-// Fisher-Yates Shuffle 演算法
-function shuffleArray(array) {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
-}
-
-// ----------------------------------------------------------------------
-// 主程式組件
-// ----------------------------------------------------------------------
-export default function SMRQuizApp() {
-  // App 狀態: 'home' | 'quiz' | 'result'
-  const [appState, setAppState] = useState('home');
-  
-  // 測驗狀態
-  const [quizQuestions, setQuizQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({}); // { questionId: selectedOptionString }
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  
-  const timerRef = useRef(null);
-
-  // 初始化測驗
-  const startQuiz = () => {
-    // 1. 隨機選 10 題
-    const shuffledQuestions = shuffleArray(rawQuestions).slice(0, 10);
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMR Concept 科學化肌筋膜放鬆技術-核心班</title>
     
-    // 2. 對每一題的選項進行隨機排列
-    const processedQuestions = shuffledQuestions.map(q => ({
-      ...q,
-      options: shuffleArray(q.options)
-    }));
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 引入 Babel 用於瀏覽器內編譯 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    setQuizQuestions(processedQuestions);
-    setCurrentQuestionIndex(0);
-    setUserAnswers({});
-    setIsSubmitted(false);
-    setTimeLeft(30 * 60);
-    setAppState('quiz');
-  };
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+    <div id="root"></div>
 
-  // 計時器邏輯
-  useEffect(() => {
-    if (appState === 'quiz' && !isSubmitted) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            submitQuiz(); // 時間到自動交卷
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [appState, isSubmitted]);
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-  // 格式化時間
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+        // ----------------------------------------------------------------------
+        // 圖示組件 (SVG) - 取代 Lucide-react 依賴，確保單檔運作正常
+        // ----------------------------------------------------------------------
+        const Icons = {
+            Clock: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ),
+            ChevronLeft: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>
+            ),
+            ChevronRight: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
+            ),
+            CheckCircle: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            ),
+            XCircle: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            ),
+            BookOpen: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            ),
+            RefreshCw: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            ),
+            Activity: ({ className }) => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            )
+        };
 
-  // 選擇答案
-  const handleOptionSelect = (option) => {
-    if (isSubmitted) return;
-    const currentQ = quizQuestions[currentQuestionIndex];
-    setUserAnswers(prev => ({
-      ...prev,
-      [currentQ.id]: option
-    }));
-  };
+        // ----------------------------------------------------------------------
+        // 題庫資料 (共 30 題)
+        // ----------------------------------------------------------------------
+        const rawQuestions = [
+            {
+                id: 1,
+                question: "關於「肌筋膜 (Myofascia)」的定義與特性，下列敘述何者正確？",
+                options: [
+                "它只是一層單純包覆肌肉的薄膜，功能僅止於隔絕組織",
+                "它是一張立體、連續且可傳遞力量的網絡，從頭到腳沒有中斷",
+                "筋膜系統各自獨立，互不相連，因此局部張力不會影響全身",
+                "肌筋膜不具備感覺神經末梢，無法回報本體感覺"
+                ],
+                correctAnswer: "它是一張立體、連續且可傳遞力量的網絡，從頭到腳沒有中斷",
+                explanation: "肌筋膜不是單一薄膜，而是一套連續性結締組織系統，具備結構支撐、力量傳導與感覺通訊(富含神經末梢)的功能。"
+            },
+            {
+                id: 2,
+                question: "在SMR概念中，關於「淺背線 (Superficial Back Line)」的功能與常見代償，下列何者正確？",
+                options: [
+                "主要負責身體的屈曲動作，如彎腰",
+                "負責維持直立姿勢，防止身體蜷曲，常見代償為足底筋膜炎或頭痛",
+                "主要連接身體前側，與呼吸模式無關",
+                "若失衡容易導致骨盆前傾與膝蓋過度彎曲"
+                ],
+                correctAnswer: "負責維持直立姿勢，防止身體蜷曲，常見代償為足底筋膜炎或頭痛",
+                explanation: "淺背線是身體的保護甲殼，負責支撐脊椎伸展。常見代償包含足底筋膜炎、骨盆後傾、背痛及額頭張力性頭痛。"
+            },
+            {
+                id: 3,
+                question: "「淺前線 (Superficial Front Line)」的主要功能與長期緊繃可能導致的結果為何？",
+                options: [
+                "負責防止身體後仰，長期緊繃易導致圓肩駝背與呼吸短淺",
+                "負責身體的旋轉穩定度，緊繃會導致脊椎側彎",
+                "主要功能是推動物體，與頭頸位置無關",
+                "負責足弓的支撐，緊繃會導致高足弓"
+                ],
+                correctAnswer: "負責防止身體後仰，長期緊繃易導致圓肩駝背與呼吸短淺",
+                explanation: "淺前線平衡淺背線張力，保護臟器。代償常見頭部前引、圓肩駝背，並限制肋骨活動導致呼吸受限。"
+            },
+            {
+                id: 4,
+                question: "關於「螺旋線 (Spiral Line)」的功能描述，下列何者最為精確？",
+                options: [
+                "負責身體前後的穩定，不參與旋轉動作",
+                "以雙螺旋形態纏繞身體，負責維持旋轉穩定及協調步伐擺動",
+                "只存在於上半身，負責手臂的揮動",
+                "主要功能是保護脊椎不受垂直壓力的傷害"
+                ],
+                correctAnswer: "以雙螺旋形態纏繞身體，負責維持旋轉穩定及協調步伐擺動",
+                explanation: "螺旋線連接頭骨、對側肩膀與髖部，協調行走步伐。失衡常見代償為身體慣性扭轉、高低肩或骨盆旋轉不正。"
+            },
+            {
+                id: 5,
+                question: "「側線 (Lateral Line)」若發生張力失衡，最常出現下列哪種代償現象？",
+                options: [
+                "圓肩與頭部前引",
+                "骨盆側移、功能性長短腳或髂脛束摩擦症候群(ITBS)",
+                "膝蓋過度伸直鎖死",
+                "腰椎過度前凸"
+                ],
+                correctAnswer: "骨盆側移、功能性長短腳或髂脛束摩擦症候群(ITBS)",
+                explanation: "側線像括號般夾住身體，負責左右平衡。失衡會導致骨盆側移、鞋底磨損不均及ITBS。"
+            },
+            {
+                id: 6,
+                question: "關於「深前線 (Deep Front Line)」的描述，下列何者錯誤？",
+                options: [
+                "位於人體最深層的核心支柱，與橫膈膜及呼吸密切相關",
+                "從足底延伸至舌頭，包含腰大肌與骨盆底肌",
+                "若失衡可能導致顳顎關節障礙(TMJ)或慢性下背痛",
+                "主要負責爆發力動作，如投擲與衝刺"
+                ],
+                correctAnswer: "主要負責爆發力動作，如投擲與衝刺",
+                explanation: "負責爆發力與跨越軀幹傳遞力量的是「功能線 (Functional Line)」。深前線主要負責核心支撐與穩定。"
+            },
+            {
+                id: 7,
+                question: "針對「胸小肌 (Pectoralis minor)」的解剖與臨床意義，下列敘述何者正確？",
+                options: [
+                "連接於肩胛骨的肩峰，負責上提手臂",
+                "若過度緊繃，可能壓迫臂神經叢導致胸廓出口症候群",
+                "是主要的呼吸肌，負責用力吐氣",
+                "拮抗肌為前鋸肌，兩者功能完全相反"
+                ],
+                correctAnswer: "若過度緊繃，可能壓迫臂神經叢導致胸廓出口症候群",
+                explanation: "胸小肌連接喙突，緊繃時易像鋼索勒住下方的神經血管(胸廓出口)，導致手麻；也會造成肩胛骨前傾。"
+            },
+            {
+                id: 8,
+                question: "「胸鎖乳突肌 (SCM)」的激痛點轉移痛(Referred Pain)特徵，常被誤診為下列何種狀況？",
+                options: [
+                "牙痛或牙齦發炎",
+                "眼壓高、鼻竇炎或偏頭痛",
+                "頸椎神經根壓迫",
+                "落枕"
+                ],
+                correctAnswer: "眼壓高、鼻竇炎或偏頭痛",
+                explanation: "SCM的疼痛常投射到眼眶周圍、額頭或耳後，易被誤認為眼壓高、鼻竇炎或血管性頭痛，稱為「假性偏頭痛」。"
+            },
+            {
+                id: 9,
+                question: "關於「提肩胛肌 (Levator scapulae)」的敘述，下列何者正確？",
+                options: [
+                "位於背部最淺層，主要負責保護脊椎",
+                "常與上斜方肌一起造成聳肩代償，過緊可能限制肩胛上轉",
+                "是肩關節外展的主要啟動肌",
+                "連接於鎖骨與肱骨之間"
+                ],
+                correctAnswer: "常與上斜方肌一起造成聳肩代償，過緊可能限制肩胛上轉",
+                explanation: "提肩胛肌負責上提與下轉肩胛骨。緊繃時會主導聳肩模式，並拮抗前鋸肌，限制肩胛骨上轉，導致夾擠風險。"
+            },
+            {
+                id: 10,
+                question: "現代人常見的「臀肌失憶症 (Gluteal Amnesia)」主要是因為哪種機制造成的？",
+                options: [
+                "臀大肌過度訓練導致疲勞",
+                "協同肌主導 (Synergistic Dominance)，大腦改徵召腿後肌或下背肌群代償",
+                "坐骨神經受損導致肌肉萎縮",
+                "骨盆過度後傾導致肌肉長度縮短"
+                ],
+                correctAnswer: "協同肌主導 (Synergistic Dominance)，大腦改徵召腿後肌或下背肌群代償",
+                explanation: "久坐導致臀大肌拉長無力，伸髖時大腦改用腿後肌或豎脊肌代班，導致腰痠背痛或大腿後側緊繃。"
+            },
+            {
+                id: 11,
+                question: "「梨狀肌症候群 (Piriformis Syndrome)」的主要成因與症狀為何？",
+                options: [
+                "梨狀肌斷裂，導致無法行走",
+                "梨狀肌緊繃壓迫坐骨神經，造成臀部深處疼痛及腿後麻感",
+                "梨狀肌無力，導致大腿無法內收",
+                "屬於腰椎椎間盤突出的併發症"
+                ],
+                correctAnswer: "梨狀肌緊繃壓迫坐骨神經，造成臀部深處疼痛及腿後麻感",
+                explanation: "梨狀肌橫跨坐骨大孔，坐骨神經通常穿過其下方。肌肉緊繃壓迫神經時，症狀類似坐骨神經痛。"
+            },
+            {
+                id: 12,
+                question: "在股四頭肌群中，唯一跨越兩個關節(髖與膝)的是哪一條肌肉？",
+                options: [
+                "股外側肌 (Vastus Lateralis)",
+                "股直肌 (Rectus Femoris)",
+                "股內側肌 (Vastus Medialis)",
+                "股中間肌 (Vastus Intermedius)"
+                ],
+                correctAnswer: "股直肌 (Rectus Femoris)",
+                explanation: "股直肌起點在髂前下棘(AIIS)，跨過髖關節，因此除了伸膝外，還具備屈髖功能。"
+            },
+            {
+                id: 13,
+                question: "關於「髂脛束 (Iliotibial Band, ITB)」的特性，下列何者正確？",
+                options: [
+                "它是一條主動收縮力很強的肌肉",
+                "它是大腿外側的厚實筋膜束，張力主要來自TFL與臀大肌",
+                "它主要負責大腿的內收動作",
+                "它與膝關節的穩定度無關"
+                ],
+                correctAnswer: "它是大腿外側的厚實筋膜束，張力主要來自TFL與臀大肌",
+                explanation: "ITB不是肌肉，無法主動收縮。它像纜繩一樣傳遞闊筋膜張肌(TFL)與臀大肌的力量，協助穩定膝關節。"
+            },
+            {
+                id: 14,
+                question: "髂脛束摩擦症候群 (ITBS) 的疼痛位置與發生機制通常為何？",
+                options: [
+                "鼠蹊部內側，因內收肌拉傷",
+                "膝蓋外側(股骨外上髁)，因膝屈伸時筋膜反覆摩擦骨頭",
+                "臀部深層，因坐骨神經受壓",
+                "小腿肚，因肌肉撕裂"
+                ],
+                correctAnswer: "膝蓋外側(股骨外上髁)，因膝屈伸時筋膜反覆摩擦骨頭",
+                explanation: "當膝彎曲約30度時，ITB會滑過股骨外上髁。若過緊或骨盆控制不佳，反覆摩擦會導致發炎疼痛。"
+            },
+            {
+                id: 15,
+                question: "伸展小腿後側肌群時，欲針對「腓腸肌 (Gastrocnemius)」進行伸展，膝蓋應保持何種姿勢？",
+                options: [
+                "膝蓋必須伸直",
+                "膝蓋必須彎曲",
+                "膝蓋姿勢不影響效果",
+                "需同時做踝關節蹠屈"
+                ],
+                correctAnswer: "膝蓋必須伸直",
+                explanation: "腓腸肌是跨關節肌肉(跨過膝)，伸膝才能拉長它；若屈膝則會放鬆腓腸肌，轉而伸展到比目魚肌。"
+            },
+            {
+                id: 16,
+                question: "「圓肩 (Round Shoulder)」的肌肉動態評估中，常見的緊繃肌群不包含下列何者？",
+                options: [
+                "胸大肌與胸小肌",
+                "闊背肌",
+                "上斜方肌",
+                "菱形肌與中下斜方肌"
+                ],
+                correctAnswer: "菱形肌與中下斜方肌",
+                explanation: "圓肩者通常伴隨肩胛骨前傾與外展，菱形肌與中下斜方肌通常是被拉長且無力的，而非緊繃。"
+            },
+            {
+                id: 17,
+                question: "在「肩屈曲測試 (Shoulder Flexion Test)」中，若動作初期即出現明顯聳肩，最可能的原因是？",
+                options: [
+                "上斜方肌過度代償，掩蓋肩胛骨上轉不足",
+                "闊背肌過度緊繃限制動作",
+                "前鋸肌力量太強",
+                "肱骨頭下滑過多"
+                ],
+                correctAnswer: "上斜方肌過度代償，掩蓋肩胛骨上轉不足",
+                explanation: "正常肩屈需配合肩胛上轉。若上轉不足(如前鋸肌/下斜方無力)，上斜方肌會提早用力聳肩代償。"
+            },
+            {
+                id: 18,
+                question: "「翼狀肩胛 (Scapular Winging)」最主要的成因通常與哪條肌肉的神經控制或肌力不足有關？",
+                options: [
+                "胸大肌",
+                "前鋸肌 (Serratus anterior)",
+                "三角肌",
+                "肱三頭肌"
+                ],
+                correctAnswer: "前鋸肌 (Serratus anterior)",
+                explanation: "前鋸肌負責將肩胛骨貼緊胸廓。若無力或神經失調，推撐時肩胛骨內側緣會翹起，形成翼狀肩胛。"
+            },
+            {
+                id: 19,
+                question: "關於「骨盆前傾 (Anterior Pelvic Tilt)」的代償模式，下列敘述何者正確？",
+                options: [
+                "腹肌過度緊繃縮短",
+                "深蹲時習慣以腰椎代替髖關節伸展，增加下背壓力",
+                "大腿後肌過度緊繃",
+                "臀大肌過度活躍"
+                ],
+                correctAnswer: "深蹲時習慣以腰椎代替髖關節伸展，增加下背壓力",
+                explanation: "骨盆前傾者通常髂腰肌與豎脊肌緊繃，臀肌與腹肌無力。動作時常以腰椎前凸代償髖伸不足。"
+            },
+            {
+                id: 20,
+                question: "「膝外翻 (Dynamic Knee Valgus)」的主要問題通常源自於哪個關節的控制不足？",
+                options: [
+                "膝關節本身的韌帶鬆弛",
+                "髖關節的外展與外旋控制不足 (臀中肌/大肌無力)",
+                "踝關節過度內翻",
+                "股四頭肌力量太強"
+                ],
+                correctAnswer: "髖關節的外展與外旋控制不足 (臀中肌/大肌無力)",
+                explanation: "膝外翻(內扣)雖發生在膝蓋，但根源常是髖部外展外旋肌群無力，導致股骨內收內旋，使膝蓋向內塌陷。"
+            },
+            {
+                id: 21,
+                question: "「肱骨前移 (Anterior Humeral Glide)」常導致前肩痛，其成因多與何種組織緊繃有關？",
+                options: [
+                "前側關節囊",
+                "後側關節囊與旋轉肌袖後側",
+                "前鋸肌",
+                "下斜方肌"
+                ],
+                correctAnswer: "後側關節囊與旋轉肌袖後側",
+                explanation: "後側關節囊過緊會將肱骨頭向前推(類似擠牙膏)，導致肱骨頭在動作時向前滑動，夾擠前側組織。"
+            },
+            {
+                id: 22,
+                question: "進行「髖伸直測試 (Hip Extension Test)」時，若受測者出現明顯的腰椎前凸代償，主要暗示什麼問題？",
+                options: [
+                "腹肌太有力",
+                "髖屈肌(如髂腰肌/股直肌)緊繃限制後伸角度",
+                "臀大肌過度活躍",
+                "腿後肌柔軟度極佳"
+                ],
+                correctAnswer: "髖屈肌(如髂腰肌/股直肌)緊繃限制後伸角度",
+                explanation: "前方髖屈肌太緊會拉住骨盆。當腿向後伸時，卡住的角度迫使個案用轉動骨盆(前傾)和拱腰來假裝後伸。"
+            },
+            {
+                id: 23,
+                question: "扁平足 (Foot over-pronation) 對下肢力線的連鎖影響，通常不包含下列哪項？",
+                options: [
+                "脛骨內旋",
+                "膝外翻 (Knee Valgus)",
+                "髖關節外旋",
+                "功能性長短腳"
+                ],
+                correctAnswer: "髖關節外旋",
+                explanation: "足弓塌陷會帶動脛骨內旋、股骨內旋及膝外翻。髖關節通常呈現內旋而非外旋狀態。"
+            },
+            {
+                id: 24,
+                question: "關於「功能線 (Functional Line)」的作用，主要體現在哪種活動中？",
+                options: [
+                "靜止站立",
+                "睡覺放鬆",
+                "劇烈運動、投擲或奔跑時的跨軀幹力量傳遞",
+                "精細的手指操作"
+                ],
+                correctAnswer: "劇烈運動、投擲或奔跑時的跨軀幹力量傳遞",
+                explanation: "功能線連接對側肩膀與大腿(如擴背肌-臀大肌)，在靜止時不活躍，主要負責爆發力動作的對角線傳導。"
+            },
+            {
+                id: 25,
+                question: "SMR-C 核心概念中，強調「關鍵點干預技術」的原則為何？",
+                options: [
+                "全身大面積、淺層的快速推拿",
+                "只針對痛點進行高強度按壓",
+                "針對影響張力與動作障礙的關鍵筋膜結點，進行準而深的介入",
+                "完全不觸碰疼痛區域，只做伸展"
+                ],
+                correctAnswer: "針對影響張力與動作障礙的關鍵筋膜結點，進行準而深的介入",
+                explanation: "關鍵點干預強調評估後鎖定問題源頭(如肌間隔、鈣化點)，進行精準且深層的處理，以恢復筋膜滑動與傳導。"
+            },
+            {
+                id: 26,
+                question: "若在髖屈曲測試中發現「腹股溝深層夾擠痛」，且大腿不自覺外展，可能原因為？",
+                options: [
+                "臀大肌太緊",
+                "髖關節夾擠或股骨頭後滑不足",
+                "內收肌太強",
+                "腹肌無力"
+                ],
+                correctAnswer: "髖關節夾擠或股骨頭後滑不足",
+                explanation: "屈髖需要股骨頭向後滑動。若後囊緊繃或結構問題導致後滑受限，股骨頭會撞擊前側髖臼，造成夾擠痛與代償動作。"
+            },
+            {
+                id: 27,
+                question: "肱二頭肌 (Biceps Brachii) 除了屈肘，還具備什麼重要功能，使其容易影響肩部？",
+                options: [
+                "肩關節內收",
+                "前臂旋後 (Supination) 與協助肩屈曲",
+                "肩關節伸展",
+                "手腕伸展"
+                ],
+                correctAnswer: "前臂旋後 (Supination) 與協助肩屈曲",
+                explanation: "肱二頭肌長頭跨過肩關節。它是強力的旋後肌，且協助肩屈。緊繃時可能拉扯盂唇或造成前肩疼痛。"
+            },
+            {
+                id: 28,
+                question: "在SMR概念中，處理「髕骨股骨疼痛症候群 (PFPS)」時，常需放鬆何處以平衡張力？",
+                options: [
+                "股內側肌",
+                "股外側肌與髂脛束",
+                "小腿後側",
+                "足底筋膜"
+                ],
+                correctAnswer: "股外側肌與髂脛束",
+                explanation: "PFPS常因外側組織(ITB/股外側肌)太緊，將髕骨向外拉離軌道。放鬆外側並訓練內側是常見策略。"
+            },
+            {
+                id: 29,
+                question: "關於「手臂線 (Arm Line)」的敘述，下列何者正確？",
+                options: [
+                "只負責手臂動作，與軀幹無關",
+                "分為深淺前後四條，從胸廓脊椎連結至指尖，影響推拉與穩定",
+                "主要由肱骨組成，沒有筋膜連結",
+                "若失衡只會造成手腕痛，不會影響肩膀"
+                ],
+                correctAnswer: "分為深淺前後四條，從胸廓脊椎連結至指尖，影響推拉與穩定",
+                explanation: "手臂線包含胸肌、背肌、手臂肌群等，透過筋膜鏈影響肩胛位置。遠端手麻常源自近端胸廓張力異常。"
+            },
+            {
+                id: 30,
+                question: "闊筋膜張肌 (TFL) 緊繃時，容易在步態或測試中造成什麼樣的代償動作？",
+                options: [
+                "髖關節過度內收",
+                "髖關節外轉",
+                "髖關節伸直角度增加",
+                "大腿過度外展與內旋"
+                ],
+                correctAnswer: "大腿過度外展與內旋",
+                explanation: "TFL的功能是屈髖、外展與內旋。緊繃時會讓腿在動作中(如走路或抬腿)偏向外展內旋的位置。"
+            }
+        ];
 
-  // 交卷
-  const submitQuiz = () => {
-    setIsSubmitted(true);
-    clearInterval(timerRef.current);
-    setAppState('result');
-  };
+        // Fisher-Yates Shuffle 演算法
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
 
-  // 計算分數
-  const calculateScore = () => {
-    let correctCount = 0;
-    quizQuestions.forEach(q => {
-      if (userAnswers[q.id] === q.correctAnswer) {
-        correctCount++;
-      }
-    });
-    return Math.round((correctCount / quizQuestions.length) * 100);
-  };
+        // ----------------------------------------------------------------------
+        // 主程式組件
+        // ----------------------------------------------------------------------
+        function SMRQuizApp() {
+            // App 狀態: 'home' | 'quiz' | 'result'
+            const [appState, setAppState] = useState('home');
+            
+            // 測驗狀態
+            const [quizQuestions, setQuizQuestions] = useState([]);
+            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+            const [userAnswers, setUserAnswers] = useState({}); // { questionId: selectedOptionString }
+            const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
+            const [isSubmitted, setIsSubmitted] = useState(false);
+            
+            const timerRef = useRef(null);
 
-  // 渲染首頁
-  if (appState === 'home') {
-    return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
-        {/* 背景裝飾 */}
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-teal-500 via-blue-500 to-indigo-600"></div>
-        <div className="absolute bottom-10 right-10 opacity-10">
-          <Activity size={200} />
-        </div>
+            // 初始化測驗
+            const startQuiz = () => {
+                // 1. 隨機選 10 題
+                const shuffledQuestions = shuffleArray(rawQuestions).slice(0, 10);
+                
+                // 2. 對每一題的選項進行隨機排列
+                const processedQuestions = shuffledQuestions.map(q => ({
+                ...q,
+                options: shuffleArray(q.options)
+                }));
 
-        <div className="max-w-2xl w-full bg-slate-800/80 backdrop-blur-sm p-10 rounded-2xl shadow-2xl border border-slate-700 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-teal-900/50 rounded-full border-2 border-teal-500/50">
-              <BookOpen size={48} className="text-teal-400" />
-            </div>
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-white">
-            SMR Concept
-          </h1>
-          <h2 className="text-2xl md:text-3xl font-light mb-8 text-teal-400">
-            科學化肌筋膜放鬆技術 - 核心班
-          </h2>
-          
-          <div className="space-y-4 mb-10 text-slate-300 text-lg">
-            <p className="flex items-center justify-center gap-2">
-              <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
-              測驗時間：30 分鐘
-            </p>
-            <p className="flex items-center justify-center gap-2">
-              <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
-              題目數量：10 題
-            </p>
-            <p className="flex items-center justify-center gap-2">
-              <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
-              合格標準：70 分
-            </p>
-          </div>
+                setQuizQuestions(processedQuestions);
+                setCurrentQuestionIndex(0);
+                setUserAnswers({});
+                setIsSubmitted(false);
+                setTimeLeft(30 * 60);
+                setAppState('quiz');
+            };
 
-          <button 
-            onClick={startQuiz}
-            className="group relative inline-flex items-center justify-center px-10 py-4 text-xl font-bold text-white transition-all duration-200 bg-gradient-to-r from-teal-600 to-blue-600 rounded-lg hover:from-teal-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 focus:ring-offset-slate-800"
-          >
-            開始測驗
-            <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-          </button>
-        </div>
-        
-        <footer className="absolute bottom-4 text-slate-500 text-sm">
-          SMR-C Scientific Myofascial Release Concept
-        </footer>
-      </div>
-    );
-  }
+            // 計時器邏輯
+            useEffect(() => {
+                if (appState === 'quiz' && !isSubmitted) {
+                timerRef.current = setInterval(() => {
+                    setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timerRef.current);
+                        submitQuiz(); // 時間到自動交卷
+                        return 0;
+                    }
+                    return prev - 1;
+                    });
+                }, 1000);
+                } else {
+                clearInterval(timerRef.current);
+                }
+                return () => clearInterval(timerRef.current);
+            }, [appState, isSubmitted]);
 
-  // 渲染測驗頁面
-  if (appState === 'quiz') {
-    const currentQ = quizQuestions[currentQuestionIndex];
-    const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
-    const progressPercent = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+            // 格式化時間
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60);
+                const s = seconds % 60;
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            };
 
-    return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 md:p-8 font-sans">
-        {/* 頂部資訊列 */}
-        <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
-          <div className="flex items-center gap-3">
-            <span className="text-teal-400 font-bold text-xl">Q {currentQuestionIndex + 1}</span>
-            <span className="text-slate-400 text-sm">/ {quizQuestions.length}</span>
-          </div>
-          <div className={`flex items-center gap-2 font-mono text-xl font-bold ${timeLeft < 300 ? 'text-red-400 animate-pulse' : 'text-blue-300'}`}>
-            <Clock size={24} />
-            {formatTime(timeLeft)}
-          </div>
-        </div>
+            // 選擇答案
+            const handleOptionSelect = (option) => {
+                if (isSubmitted) return;
+                const currentQ = quizQuestions[currentQuestionIndex];
+                setUserAnswers(prev => ({
+                ...prev,
+                [currentQ.id]: option
+                }));
+            };
 
-        {/* 進度條 */}
-        <div className="w-full max-w-4xl h-1.5 bg-slate-800 rounded-full mb-8 overflow-hidden">
-          <div 
-            className="h-full bg-teal-500 transition-all duration-300 ease-out"
-            style={{ width: `${progressPercent}%` }}
-          ></div>
-        </div>
+            // 交卷
+            const submitQuiz = () => {
+                setIsSubmitted(true);
+                clearInterval(timerRef.current);
+                setAppState('result');
+            };
 
-        {/* 題目區塊 */}
-        <div className="w-full max-w-4xl flex-grow flex flex-col">
-          <div className="bg-slate-800 rounded-2xl p-6 md:p-10 shadow-2xl border border-slate-700/50 mb-6 min-h-[400px] flex flex-col">
-            <h3 className="text-2xl md:text-3xl font-medium leading-normal mb-8 text-white">
-              {currentQ.question}
-            </h3>
+            // 計算分數
+            const calculateScore = () => {
+                let correctCount = 0;
+                quizQuestions.forEach(q => {
+                if (userAnswers[q.id] === q.correctAnswer) {
+                    correctCount++;
+                }
+                });
+                return Math.round((correctCount / quizQuestions.length) * 100);
+            };
 
-            <div className="flex-grow space-y-4">
-              {currentQ.options.map((option, idx) => {
-                const isSelected = userAnswers[currentQ.id] === option;
+            // 渲染首頁
+            if (appState === 'home') {
                 return (
-                  <button
-                    key={idx}
-                    onClick={() => handleOptionSelect(option)}
-                    className={`w-full text-left p-5 rounded-xl text-lg transition-all duration-200 border-2 flex items-start group
-                      ${isSelected 
-                        ? 'bg-blue-600/20 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
-                        : 'bg-slate-700/30 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-500'
-                      }`}
-                  >
-                    <span className={`inline-flex items-center justify-center w-8 h-8 mr-4 rounded-full text-sm font-bold flex-shrink-0 transition-colors
-                      ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-600 text-slate-400 group-hover:bg-slate-500'}`}>
-                      {String.fromCharCode(65 + idx)}
-                    </span>
-                    <span className="leading-snug">{option}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+                    {/* 背景裝飾 */}
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-teal-500 via-blue-500 to-indigo-600"></div>
+                    <div className="absolute bottom-10 right-10 opacity-10">
+                        <Icons.Activity className="w-[200px] h-[200px]" />
+                    </div>
 
-          {/* 導航按鈕 */}
-          <div className="flex justify-between items-center mt-auto">
-            <button
-              onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-              disabled={currentQuestionIndex === 0}
-              className={`flex items-center px-6 py-3 rounded-lg text-lg font-medium transition-colors
-                ${currentQuestionIndex === 0 
-                  ? 'text-slate-600 cursor-not-allowed' 
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
-            >
-              <ChevronLeft className="mr-2" />
-              上一題
-            </button>
-
-            {isLastQuestion ? (
-              <button
-                onClick={submitQuiz}
-                className="flex items-center px-8 py-3 bg-gradient-to-r from-teal-600 to-green-600 text-white text-lg font-bold rounded-lg hover:from-teal-500 hover:to-green-500 shadow-lg transform hover:scale-105 transition-all"
-              >
-                繳交試卷
-                <CheckCircle className="ml-2" />
-              </button>
-            ) : (
-              <button
-                onClick={() => setCurrentQuestionIndex(prev => Math.min(quizQuestions.length - 1, prev + 1))}
-                className="flex items-center px-6 py-3 bg-blue-600 text-white text-lg font-bold rounded-lg hover:bg-blue-500 shadow-md transition-colors"
-              >
-                下一題
-                <ChevronRight className="ml-2" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 渲染結果頁面
-  if (appState === 'result') {
-    const score = calculateScore();
-    const isPassed = score >= 70;
-
-    return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 md:p-8 font-sans">
-        <div className="max-w-4xl w-full">
-          {/* 成績看板 */}
-          <div className="bg-slate-800 rounded-2xl p-8 mb-8 border border-slate-700 shadow-2xl text-center relative overflow-hidden">
-            <div className={`absolute top-0 left-0 w-full h-2 ${isPassed ? 'bg-green-500' : 'bg-amber-500'}`}></div>
-            <h2 className="text-3xl text-slate-300 mb-4">測驗結果</h2>
-            <div className="flex flex-col items-center justify-center">
-              <span className={`text-8xl font-bold mb-2 ${isPassed ? 'text-green-400' : 'text-amber-400'}`}>
-                {score}
-              </span>
-              <span className="text-slate-400 text-xl">分</span>
-            </div>
-            <p className="mt-4 text-lg text-slate-300">
-              {isPassed ? "恭喜通過！您對 SMR 概念掌握得相當好。" : "再接再厲！複習一下錯題觀念會更強喔。"}
-            </p>
-            
-            <button
-              onClick={startQuiz}
-              className="mt-8 flex items-center mx-auto px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-white"
-            >
-              <RefreshCw className="mr-2 w-5 h-5" />
-              重新測驗
-            </button>
-          </div>
-
-          {/* 詳解列表 */}
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold text-teal-400 mb-4 pl-2 border-l-4 border-teal-500">
-              試題詳解與分析
-            </h3>
-            
-            {quizQuestions.map((q, index) => {
-              const userAnswer = userAnswers[q.id];
-              const isCorrect = userAnswer === q.correctAnswer;
-
-              return (
-                <div key={q.id} className={`bg-slate-800 rounded-xl p-6 border-l-8 ${isCorrect ? 'border-green-500' : 'border-red-500'} shadow-md`}>
-                  <div className="flex items-start gap-4 mb-4">
-                    <span className="bg-slate-700 text-slate-300 px-3 py-1 rounded text-sm font-mono shrink-0">
-                      Q{index + 1}
-                    </span>
-                    <h4 className="text-xl font-medium text-white">{q.question}</h4>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4 mb-4 text-base">
-                    <div className={`p-4 rounded-lg ${isCorrect ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
-                      <p className="text-slate-400 text-sm mb-1">您的回答：</p>
-                      <div className="flex items-center gap-2">
-                        {isCorrect ? <CheckCircle className="text-green-500 w-5 h-5 shrink-0" /> : <XCircle className="text-red-500 w-5 h-5 shrink-0" />}
-                        <span className={isCorrect ? 'text-green-200' : 'text-red-200'}>
-                          {userAnswer || "(未作答)"}
-                        </span>
-                      </div>
+                    <div className="max-w-2xl w-full bg-slate-800/80 backdrop-blur-sm p-10 rounded-2xl shadow-2xl border border-slate-700 text-center">
+                    <div className="flex justify-center mb-6">
+                        <div className="p-4 bg-teal-900/50 rounded-full border-2 border-teal-500/50">
+                            <Icons.BookOpen className="w-12 h-12 text-teal-400" />
+                        </div>
                     </div>
                     
-                    {!isCorrect && (
-                      <div className="p-4 rounded-lg bg-green-900/20 border border-green-900/50">
-                        <p className="text-slate-400 text-sm mb-1">正確答案：</p>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="text-green-500 w-5 h-5 shrink-0" />
-                          <span className="text-green-300">{q.correctAnswer}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-white">
+                        SMR Concept
+                    </h1>
+                    <h2 className="text-2xl md:text-3xl font-light mb-8 text-teal-400">
+                        科學化肌筋膜放鬆技術 - 核心班
+                    </h2>
+                    
+                    <div className="space-y-4 mb-10 text-slate-300 text-lg">
+                        <p className="flex items-center justify-center gap-2">
+                        <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+                        測驗時間：30 分鐘
+                        </p>
+                        <p className="flex items-center justify-center gap-2">
+                        <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+                        題目數量：10 題
+                        </p>
+                        <p className="flex items-center justify-center gap-2">
+                        <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+                        合格標準：70 分
+                        </p>
+                    </div>
 
-                  <div className="bg-slate-900/50 p-5 rounded-lg border border-slate-700/50">
-                    <p className="text-teal-400 font-bold mb-2 flex items-center">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      解析：
-                    </p>
-                    <p className="text-slate-300 leading-relaxed">
-                      {q.explanation}
-                    </p>
-                  </div>
+                    <button 
+                        onClick={startQuiz}
+                        className="group relative inline-flex items-center justify-center px-10 py-4 text-xl font-bold text-white transition-all duration-200 bg-gradient-to-r from-teal-600 to-blue-600 rounded-lg hover:from-teal-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 focus:ring-offset-slate-800"
+                    >
+                        開始測驗
+                        <Icons.ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    </div>
+                    
+                    <footer className="absolute bottom-4 text-slate-500 text-sm">
+                    SMR-C Scientific Myofascial Release Concept
+                    </footer>
                 </div>
-              );
-            })}
-          </div>
-          
-          <div className="h-10"></div>
-        </div>
-      </div>
-    );
-  }
-}
+                );
+            }
+
+            // 渲染測驗頁面
+            if (appState === 'quiz') {
+                const currentQ = quizQuestions[currentQuestionIndex];
+                const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
+                const progressPercent = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+
+                return (
+                <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 md:p-8 font-sans">
+                    {/* 頂部資訊列 */}
+                    <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg">
+                    <div className="flex items-center gap-3">
+                        <span className="text-teal-400 font-bold text-xl">Q {currentQuestionIndex + 1}</span>
+                        <span className="text-slate-400 text-sm">/ {quizQuestions.length}</span>
+                    </div>
+                    <div className={`flex items-center gap-2 font-mono text-xl font-bold ${timeLeft < 300 ? 'text-red-400 animate-pulse' : 'text-blue-300'}`}>
+                        <Icons.Clock className="w-6 h-6" />
+                        {formatTime(timeLeft)}
+                    </div>
+                    </div>
+
+                    {/* 進度條 */}
+                    <div className="w-full max-w-4xl h-1.5 bg-slate-800 rounded-full mb-8 overflow-hidden">
+                    <div 
+                        className="h-full bg-teal-500 transition-all duration-300 ease-out"
+                        style={{ width: `${progressPercent}%` }}
+                    ></div>
+                    </div>
+
+                    {/* 題目區塊 */}
+                    <div className="w-full max-w-4xl flex-grow flex flex-col">
+                    <div className="bg-slate-800 rounded-2xl p-6 md:p-10 shadow-2xl border border-slate-700/50 mb-6 min-h-[400px] flex flex-col">
+                        <h3 className="text-2xl md:text-3xl font-medium leading-normal mb-8 text-white">
+                        {currentQ.question}
+                        </h3>
+
+                        <div className="flex-grow space-y-4">
+                        {currentQ.options.map((option, idx) => {
+                            const isSelected = userAnswers[currentQ.id] === option;
+                            return (
+                            <button
+                                key={idx}
+                                onClick={() => handleOptionSelect(option)}
+                                className={`w-full text-left p-5 rounded-xl text-lg transition-all duration-200 border-2 flex items-start group
+                                ${isSelected 
+                                    ? 'bg-blue-600/20 border-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                                    : 'bg-slate-700/30 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-500'
+                                }`}
+                            >
+                                <span className={`inline-flex items-center justify-center w-8 h-8 mr-4 rounded-full text-sm font-bold flex-shrink-0 transition-colors
+                                ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-600 text-slate-400 group-hover:bg-slate-500'}`}>
+                                {String.fromCharCode(65 + idx)}
+                                </span>
+                                <span className="leading-snug">{option}</span>
+                            </button>
+                            );
+                        })}
+                        </div>
+                    </div>
+
+                    {/* 導航按鈕 */}
+                    <div className="flex justify-between items-center mt-auto">
+                        <button
+                        onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                        disabled={currentQuestionIndex === 0}
+                        className={`flex items-center px-6 py-3 rounded-lg text-lg font-medium transition-colors
+                            ${currentQuestionIndex === 0 
+                            ? 'text-slate-600 cursor-not-allowed' 
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
+                        >
+                        <Icons.ChevronLeft className="mr-2" />
+                        上一題
+                        </button>
+
+                        {isLastQuestion ? (
+                        <button
+                            onClick={submitQuiz}
+                            className="flex items-center px-8 py-3 bg-gradient-to-r from-teal-600 to-green-600 text-white text-lg font-bold rounded-lg hover:from-teal-500 hover:to-green-500 shadow-lg transform hover:scale-105 transition-all"
+                        >
+                            繳交試卷
+                            <Icons.CheckCircle className="ml-2" />
+                        </button>
+                        ) : (
+                        <button
+                            onClick={() => setCurrentQuestionIndex(prev => Math.min(quizQuestions.length - 1, prev + 1))}
+                            className="flex items-center px-6 py-3 bg-blue-600 text-white text-lg font-bold rounded-lg hover:bg-blue-500 shadow-md transition-colors"
+                        >
+                            下一題
+                            <Icons.ChevronRight className="ml-2" />
+                        </button>
+                        )}
+                    </div>
+                    </div>
+                </div>
+                );
+            }
+
+            // 渲染結果頁面
+            if (appState === 'result') {
+                const score = calculateScore();
+                const isPassed = score >= 70;
+
+                return (
+                <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center p-4 md:p-8 font-sans">
+                    <div className="max-w-4xl w-full">
+                    {/* 成績看板 */}
+                    <div className="bg-slate-800 rounded-2xl p-8 mb-8 border border-slate-700 shadow-2xl text-center relative overflow-hidden">
+                        <div className={`absolute top-0 left-0 w-full h-2 ${isPassed ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                        <h2 className="text-3xl text-slate-300 mb-4">測驗結果</h2>
+                        <div className="flex flex-col items-center justify-center">
+                        <span className={`text-8xl font-bold mb-2 ${isPassed ? 'text-green-400' : 'text-amber-400'}`}>
+                            {score}
+                        </span>
+                        <span className="text-slate-400 text-xl">分</span>
+                        </div>
+                        <p className="mt-4 text-lg text-slate-300">
+                        {isPassed ? "恭喜通過！您對 SMR 概念掌握得相當好。" : "再接再厲！複習一下錯題觀念會更強喔。"}
+                        </p>
+                        
+                        <button
+                        onClick={startQuiz}
+                        className="mt-8 flex items-center mx-auto px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-white"
+                        >
+                        <Icons.RefreshCw className="mr-2 w-5 h-5" />
+                        重新測驗
+                        </button>
+                    </div>
+
+                    {/* 詳解列表 */}
+                    <div className="space-y-6">
+                        <h3 className="text-2xl font-bold text-teal-400 mb-4 pl-2 border-l-4 border-teal-500">
+                        試題詳解與分析
+                        </h3>
+                        
+                        {quizQuestions.map((q, index) => {
+                        const userAnswer = userAnswers[q.id];
+                        const isCorrect = userAnswer === q.correctAnswer;
+
+                        return (
+                            <div key={q.id} className={`bg-slate-800 rounded-xl p-6 border-l-8 ${isCorrect ? 'border-green-500' : 'border-red-500'} shadow-md`}>
+                            <div className="flex items-start gap-4 mb-4">
+                                <span className="bg-slate-700 text-slate-300 px-3 py-1 rounded text-sm font-mono shrink-0">
+                                Q{index + 1}
+                                </span>
+                                <h4 className="text-xl font-medium text-white">{q.question}</h4>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-4 mb-4 text-base">
+                                <div className={`p-4 rounded-lg ${isCorrect ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
+                                <p className="text-slate-400 text-sm mb-1">您的回答：</p>
+                                <div className="flex items-center gap-2">
+                                    {isCorrect ? <Icons.CheckCircle className="text-green-500 w-5 h-5 shrink-0" /> : <Icons.XCircle className="text-red-500 w-5 h-5 shrink-0" />}
+                                    <span className={isCorrect ? 'text-green-200' : 'text-red-200'}>
+                                    {userAnswer || "(未作答)"}
+                                    </span>
+                                </div>
+                                </div>
+                                
+                                {!isCorrect && (
+                                <div className="p-4 rounded-lg bg-green-900/20 border border-green-900/50">
+                                    <p className="text-slate-400 text-sm mb-1">正確答案：</p>
+                                    <div className="flex items-center gap-2">
+                                    <Icons.CheckCircle className="text-green-500 w-5 h-5 shrink-0" />
+                                    <span className="text-green-300">{q.correctAnswer}</span>
+                                    </div>
+                                </div>
+                                )}
+                            </div>
+
+                            <div className="bg-slate-900/50 p-5 rounded-lg border border-slate-700/50">
+                                <p className="text-teal-400 font-bold mb-2 flex items-center">
+                                <Icons.BookOpen className="w-4 h-4 mr-2" />
+                                解析：
+                                </p>
+                                <p className="text-slate-300 leading-relaxed">
+                                {q.explanation}
+                                </p>
+                            </div>
+                            </div>
+                        );
+                        })}
+                    </div>
+                    
+                    <div className="h-10"></div>
+                    </div>
+                </div>
+                );
+            }
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SMRQuizApp />);
+    </script>
+</body>
+</html>
